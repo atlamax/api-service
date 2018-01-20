@@ -1,0 +1,4 @@
+POST    /compositions                                   com.mobcrush.composition.controller.CompositionController.create
+GET     /compositions/:compositionKey/attach            com.mobcrush.composition.controller.CompositionController.attach(compositionKey: String)
+POST    /compositions/:compositionKey/start             com.mobcrush.composition.controller.CompositionController.start(compositionKey: String)
+DELETE  /compositions/:compositionKey/stop              com.mobcrush.composition.controller.CompositionController.stop(compositionKey: String)
