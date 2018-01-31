@@ -26,6 +26,8 @@ class CompositionServiceImpl @Inject()(
 
   private val logger: Logger = Logger(this.getClass)
 
+  private val MOBXRUSH_OUTPUT_URL: String = "rtmp://live.mobcrush.net/stream/9d62adf35aab0d8b8da99e7d0f6eb7eb1a3e76b2cb8d7271c7a532e9bdb8e765"
+
   implicit val wowzaRequestFormat: Format[WowzaStartStreamRequestModel] = Json.format[WowzaStartStreamRequestModel]
 
   @Nonnull
@@ -90,9 +92,10 @@ class CompositionServiceImpl @Inject()(
       return CompositionResponseModel(composition.targetStreamURL)
     }
 
-    val targetStreamURL: String = wowzaURLFactory.createRTMP(
+    val targetStreamURL: String = MOBXRUSH_OUTPUT_URL
+    /*val targetStreamURL: String = wowzaURLFactory.createRTMP(
       outputStreamNameGenerator.generate()
-    )
+    )*/
 
     val wowzaRequestModel: WowzaStartStreamRequestModel = WowzaStartStreamRequestModel(
       composition.masterStreamURL,
