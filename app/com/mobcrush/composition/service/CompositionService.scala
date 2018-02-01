@@ -2,7 +2,7 @@ package com.mobcrush.composition.service
 
 import javax.annotation.{Nonnull, Nullable}
 
-import com.mobcrush.composition.model.{Composition, CompositionResponseModel, CreateCompositionModel}
+import com.mobcrush.composition.model.{Composition, CompositionResponseModel, CreateCompositionModel, StartCompositionModel}
 
 trait CompositionService {
 
@@ -13,7 +13,7 @@ trait CompositionService {
   def attach(compositionKey: String): CompositionResponseModel
 
   @Nullable
-  def start(compositionKey: String): CompositionResponseModel
+  def start(compositionKey: String, startCompositionModel: StartCompositionModel): Unit
 
   def stop(compositionKey: String): Boolean
 

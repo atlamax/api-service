@@ -5,8 +5,8 @@ import javax.annotation.{Nonnull, Nullable}
 
 import com.google.inject.{Inject, Singleton}
 import com.mobcrush.composition.dao.InMemoryCompositionDAO
-import com.mobcrush.composition.factory.{InputStreamNameGenerator, OutputStreamNameGenerator, WowzaURLFactory}
-import com.mobcrush.composition.model.{Composition, CompositionResponseModel, CreateCompositionModel, WowzaStartStreamRequestModel}
+import com.mobcrush.composition.factory.{InputStreamNameGenerator, WowzaURLFactory}
+import com.mobcrush.composition.model._
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
 import play.api.libs.ws.{WSClient, WSRequest}
@@ -19,14 +19,11 @@ import scala.util.{Failure, Success}
 class CompositionServiceImpl @Inject()(
                                         dao: InMemoryCompositionDAO,
                                         inputStreamNameGenerator: InputStreamNameGenerator,
-                                        outputStreamNameGenerator: OutputStreamNameGenerator,
                                         wowzaURLFactory: WowzaURLFactory,
                                         ws: WSClient
                                       ) extends CompositionService {
 
   private val logger: Logger = Logger(this.getClass)
-
-  private val MOBXRUSH_OUTPUT_URL: String = "rtmp://live.mobcrush.net/stream/9d62adf35aab0d8b8da99e7d0f6eb7eb1a3e76b2cb8d7271c7a532e9bdb8e765"
 
   implicit val wowzaRequestFormat: Format[WowzaStartStreamRequestModel] = Json.format[WowzaStartStreamRequestModel]
 
@@ -78,29 +75,28 @@ class CompositionServiceImpl @Inject()(
   }
 
   @Nullable
-  override def start(compositionKey: String): CompositionResponseModel = {
+  override def start(compositionKey: String, startCompositionModel: StartCompositionModel): Unit = {
     logger.info(s"Going to start composition with key: '$compositionKey'")
     val composition = dao.get(compositionKey)
 
     if (composition == null || composition.masterStreamURL.isEmpty) {
       logger.error(s"Composition with key '$compositionKey' do not exists, or it has no attached stream")
-      return null
+      return
     }
 
     if (composition.targetStreamURL.nonEmpty) {
-      logger.warn(s"Composition with key '$compositionKey' already started, return URL: '${composition.targetStreamURL}'")
-      return CompositionResponseModel(composition.targetStreamURL)
-    }
+      logger.warn(s"Composition with key '$compositionKey' already started")
 
-    val targetStreamURL: String = MOBXRUSH_OUTPUT_URL
-    /*val targetStreamURL: String = wowzaURLFactory.createRTMP(
-      outputStreamNameGenerator.generate()
-    )*/
+      if (startCompositionModel.force.isEmpty) {
+        return
+      }
+      logger.warn(s"But will re-send request to Wowza")
+    }
 
     val wowzaRequestModel: WowzaStartStreamRequestModel = WowzaStartStreamRequestModel(
       composition.masterStreamURL,
       composition.slaveStreamURL,
-      targetStreamURL
+      startCompositionModel.outputStream.url
     )
 
     val request: WSRequest = ws
@@ -113,20 +109,18 @@ class CompositionServiceImpl @Inject()(
       case Success(t) => {
         if (t.status != 200) {
           logger.error(s"Response from Wowza has status: '${t.status}', body: '${t.body}'")
-          return null
+          return
         }
 
         logger.info(s"Successful request to start composition finished with response status from Wowza: '${t.status}', body: '${t.body}'")
-        composition.targetStreamURL = targetStreamURL
+        composition.targetStreamURL = startCompositionModel.outputStream.url
         dao.update(compositionKey, composition)
 
-        logger.info(s"Started composition with key: '$compositionKey', return URL: '$targetStreamURL'")
-        CompositionResponseModel(targetStreamURL)
+        logger.info(s"Started composition with key: '$compositionKey'")
       }
 
       case Failure(e) => {
         logger.error(s"Request to Wowza failed with message: ${e.getMessage}", e)
-        null
       }
     }
   }
