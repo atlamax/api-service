@@ -80,7 +80,7 @@ class CompositionController @Inject()(cc: ControllerComponents, config: Configur
     val result = service.stop(compositionKey)
 
     if (result) {
-      Ok("Make HTTP request to Wowza")
+      Ok
     } else {
       BadRequest
     }
